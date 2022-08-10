@@ -19,14 +19,14 @@ import org.joda.time.Duration;
  */
 public class RatingCalculator {
 
-  private final static double DEFAULT_RATING =  1500.0;
-  private final static double DEFAULT_DEVIATION =  350;
-  private final static double DEFAULT_VOLATILITY =  0.06;
-  private final static double DEFAULT_TAU =  0.75;
-  private final static double MULTIPLIER =  173.7178;
-  private final static double CONVERGENCE_TOLERANCE =  0.000001;
-  private final static int ITERATION_MAX =  1000;
-  private final static double DAYS_PER_MILLI =  1.0 / (1000 * 60 * 60 * 24);
+  private final static double DEFAULT_RATING = 1500.0;
+  private final static double DEFAULT_DEVIATION = 350;
+  private final static double DEFAULT_VOLATILITY = 0.06;
+  private final static double DEFAULT_TAU = 0.75;
+  private final static double MULTIPLIER = 173.7178;
+  private final static double CONVERGENCE_TOLERANCE = 0.000001;
+  private final static int ITERATION_MAX = 1000;
+  private final static double DAYS_PER_MILLI = 1.0 / (1000 * 60 * 60 * 24);
 
   private final double tau; // constrains volatility over time
   private final double defaultVolatility;
@@ -42,9 +42,8 @@ public class RatingCalculator {
   }
 
   /**
-   *
-   * @param initVolatility  Initial volatility for new ratings
-   * @param tau             How volatility changes over time
+   * @param initVolatility Initial volatility for new ratings
+   * @param tau            How volatility changes over time
    */
   public RatingCalculator(double initVolatility, double tau) {
     this.defaultVolatility = initVolatility;
@@ -52,9 +51,8 @@ public class RatingCalculator {
   }
 
   /**
-   *
-   * @param initVolatility  Initial volatility for new ratings
-   * @param tau             How volatility changes over time
+   * @param initVolatility Initial volatility for new ratings
+   * @param tau            How volatility changes over time
    */
   public RatingCalculator(double initVolatility, double tau, double ratingPeriodsPerDay) {
     this.defaultVolatility = initVolatility;
@@ -71,6 +69,31 @@ public class RatingCalculator {
    *
    * @param results
    */
+
+  public static double dilog(double x) {
+    if (x >= 1) {
+      return Math.pow(Math.PI, 2) / 6;
+    }
+    if (x <= -1) {
+      return -Math.pow(Math.PI, 2) / 12;
+    }
+    double sum = 0;
+    for (double i = 1; i <= 100; i++) {
+      sum = sum + Math.pow(x, i) / Math.pow(i, 2);
+    }
+    return sum;
+  }
+
+  public static double Ei(double x)
+  {
+    double y=Math.abs(x);
+    double sum=y+Math.log(y);
+    for (double n=1; n<=8; n++)
+    {
+      sum=sum+Math.pow(y, n)/Math.pow(n, n-1);
+    }
+    return sum;
+  }
   public void updateRatings(RatingPeriodResults results) {
     updateRatings(results, false);
   }
@@ -142,7 +165,7 @@ public class RatingCalculator {
   private void calculateNewRating(Rating player, List<Result> results, double elapsedRatingPeriods) throws RuntimeException {
     double phi = player.getGlicko2RatingDeviation();
     double sigma = player.getVolatility();
-    double a = Math.log( Math.pow(sigma, 2) );
+    double a = dilog( Math.pow(sigma, 2) );
     double delta = delta(player, results);
     double v = v(player, results);
 
@@ -150,7 +173,7 @@ public class RatingCalculator {
     double A = a;
     double B;
     if ( Math.pow(delta, 2) > Math.pow(phi, 2) + v ) {
-      B = Math.log( Math.pow(delta, 2) - Math.pow(phi, 2) - v );
+      B = dilog( Math.pow(delta, 2) - Math.pow(phi, 2) - v );
     } else {
       double k = 1;
       B = a - ( k * Math.abs(tau));
@@ -192,7 +215,7 @@ public class RatingCalculator {
       throw new RuntimeException("Convergence fail");
     }
 
-    double newSigma = Math.exp( A/2.0 );
+    double newSigma = Ei( A/2.0 );
 
     player.setWorkingVolatility(newSigma);
 
@@ -212,8 +235,8 @@ public class RatingCalculator {
   }
 
   private double f(double x, double delta, double phi, double v, double a, double tau) {
-    return ( Math.exp(x) * ( Math.pow(delta, 2) - Math.pow(phi, 2) - v - Math.exp(x) ) /
-        (2.0 * Math.pow( Math.pow(phi, 2) + v + Math.exp(x), 2) )) -
+    return ( Ei(x) * ( Math.pow(delta, 2) - Math.pow(phi, 2) - v - Ei(x) ) /
+        (2.0 * Math.pow( Math.pow(phi, 2) + v + Ei(x), 2) )) -
       ( ( x - a ) / Math.pow(tau, 2) );
   }
 
@@ -225,7 +248,7 @@ public class RatingCalculator {
    * @return
    */
   private double g(double deviation) {
-    return 1.0 / ( Math.sqrt( 1.0 + ( 3.0 * Math.pow(deviation, 2) / Math.pow(Math.PI,2) )));
+    return 1.0 / ( Math.sqrt( 1.0 + ( Math.pow(deviation, 2) / Math.pow(Math.PI,2) )));
   }
 
 
@@ -238,7 +261,7 @@ public class RatingCalculator {
    * @return
    */
   private double E(double playerRating, double opponentRating, double opponentDeviation) {
-    return 1.0 / (1.0 + Math.exp( -1.0 * g(opponentDeviation) * ( playerRating - opponentRating )));
+    return 1.0 / (1.0 + Ei( -1.0 * g(opponentDeviation) * ( playerRating - opponentRating )));
   }
 
 
