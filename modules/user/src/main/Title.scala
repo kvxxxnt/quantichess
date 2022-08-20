@@ -23,7 +23,7 @@ object Title {
     Title("CM")  -> "Candidate Master",
     Title("WCM") -> "Woman Candidate Master",
     Title("CLB") -> "Chlebissimo",
-	Title("ЧВК") -> "Черт Высшей Категории",
+    Title("CHVK") -> "Chert Vishey Kategorii",
     Title("WNM") -> "Woman National Master",
     LM           -> "Lichess Master",
     BOT          -> "Chess Robot"
